@@ -54,8 +54,8 @@ public class GoogleSearchCommand extends Command {
                 request.setReadTimeout(60000);
             };
 
-            Customsearch customsearch = new Customsearch
-                    .Builder(GoogleNetHttpTransport.newTrustedTransport(), jsonFactory, httpRequestInitializer)
+            Customsearch customsearch = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(),
+                    jsonFactory, httpRequestInitializer)
                     .setApplicationName("GoogleSearch")
                     .build();
 

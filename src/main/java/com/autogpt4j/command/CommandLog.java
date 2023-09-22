@@ -22,7 +22,7 @@ public class CommandLog {
     }
 
     public void attemptToExecute(String commandName, Command command) {
-        if(!isDuplicate(commandName, command)) {
+        if (!isDuplicate(commandName, command)) {
             command.execute();
             writeToLog(commandName, command);
         }
@@ -31,13 +31,11 @@ public class CommandLog {
     private boolean isDuplicate(String commandName, Command command) {
         HashMap<String, List<Command>> commandMap = getCommandMap();
 
-        if(commandMap.containsKey(commandName)) {
+        if (commandMap.containsKey(commandName)) {
             List<Command> commands = commandMap.get(commandName);
             return commands.stream()
-                    .anyMatch(it ->
-                            command.getDescription().equals(it.getDescription())
-                                    && command.getName().equals(it.getName())
-                    );
+                    .anyMatch(it -> command.getDescription().equals(it.getDescription())
+                            && command.getName().equals(it.getName()));
         }
 
         return false;
@@ -46,7 +44,7 @@ public class CommandLog {
     private void writeToLog(String commandName, Command command) {
         HashMap<String, List<Command>> commandMap = getCommandMap();
 
-        if(commandMap.containsKey(commandName)) {
+        if (commandMap.containsKey(commandName)) {
             commandMap.get(commandName).add(command);
         } else {
             commandMap.put(commandName, Lists.newArrayList(command));
@@ -71,7 +69,7 @@ public class CommandLog {
     private String readLogFile() {
         try {
             return FileUtils.readFileToString(new File(logPath), Charset.forName("UTF-8"));
-        }  catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

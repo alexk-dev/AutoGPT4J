@@ -80,7 +80,7 @@ public class ImageGenerationCommand extends Command {
     private String generateImageWithHuggingFace() throws IOException {
         String apiUrl = String.format("https://api-inference.huggingface.co/models/%s", huggingFaceImageModel);
 
-        if (huggingFaceApiKey== null) {
+        if (huggingFaceApiKey == null) {
             throw new IllegalArgumentException("You need to set your Hugging Face API token in the config file.");
         }
 
@@ -100,7 +100,8 @@ public class ImageGenerationCommand extends Command {
                     ImageIO.write(image, "jpg", new File(fileName));
                     return fileName;
                 } else {
-                    throw new IOException("Failed to generate image with HuggingFace: " + response.getStatusLine().getReasonPhrase());
+                    throw new IOException(
+                            "Failed to generate image with HuggingFace: " + response.getStatusLine().getReasonPhrase());
                 }
             }
         }

@@ -26,14 +26,14 @@ public class ExecuteCodeCommand extends Command {
     }
 
     private String executePythonCode() {
-        if(!getExtension().equals("py")) {
+        if (!getExtension().equals("py")) {
             return "Error: Invalid file type. Only .py files are allowed.";
         } else if (!fileExists()) {
             return String.format("Error: File %s does not exist.", fileName);
         }
 
         return runPythonFile().stream()
-                    .collect(Collectors.joining(" "));
+                .collect(Collectors.joining(" "));
 
     }
 
@@ -59,7 +59,6 @@ public class ExecuteCodeCommand extends Command {
             throw new RuntimeException(e);
         }
     }
-
 
     private File getFile() {
         return Paths.get(filesLocation, fileName).toFile();

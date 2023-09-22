@@ -3,7 +3,8 @@ package com.autogpt4j.llm.tokenization;
 import com.autogpt4j.content.Content;
 
 /**
- * Credit to eisber (Markus Cozowicz) for this, check out his GitHub! https://github.com/eisber/tiktoken
+ * Credit to eisber (Markus Cozowicz) for this, check out his GitHub!
+ * https://github.com/eisber/tiktoken
  */
 public abstract class TokensAndChunking {
 

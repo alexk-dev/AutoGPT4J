@@ -29,7 +29,8 @@ public class SearchAgent extends Agent {
         Content content = llmManager.populateEmbeddings(new Content().setText(userMessage.getContent()));
         List<Chunk> chunks = memoryManager.getChunks(content);
 
-        chunks.forEach(chunk -> context.addToContext(new ChatMessage(ChatMessageRole.USER.value(), chunk.getSubText())));
+        chunks.forEach(
+                chunk -> context.addToContext(new ChatMessage(ChatMessageRole.USER.value(), chunk.getSubText())));
 
         List<ChatCompletionChoice> completionChoices = llmManager.getCompletion(context.getCurrentContext());
 

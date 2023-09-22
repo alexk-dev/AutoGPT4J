@@ -40,10 +40,10 @@ public class SummarizedContext extends Context {
 
         Integer tokenCount = llmManager.getTokenAndChunking().getContextTokenCount(fullString);
 
-        if(tokenCount > llmManager.getTokenAndChunking().getMaximumContextTokens()) {
+        if (tokenCount > llmManager.getTokenAndChunking().getMaximumContextTokens()) {
             String currentContext = chatMessages.stream()
                     .filter(it -> it.getRole().equals(ChatMessageRole.USER)
-                                || it.getRole().equals(ChatMessageRole.SYSTEM))
+                            || it.getRole().equals(ChatMessageRole.SYSTEM))
                     .map(it -> it.getContent())
                     .collect(Collectors.joining());
 

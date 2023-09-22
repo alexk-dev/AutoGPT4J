@@ -40,7 +40,7 @@ public class OpenAIChunker extends TokensAndChunking {
     public void chunkContent(Content content) {
         List<Integer> encodedDocument = embeddingEncoding.encode(content.getText());
 
-        if(encodedDocument.size() > embeddingModelType.getMaxContextLength()) {
+        if (encodedDocument.size() > embeddingModelType.getMaxContextLength()) {
             List<List<Integer>> encodedChunks = Lists.partition(encodedDocument,
                     splitFactor(encodedDocument, embeddingModelType));
             AtomicInteger atomicInteger = new AtomicInteger(0);
@@ -49,7 +49,7 @@ public class OpenAIChunker extends TokensAndChunking {
                     .forEach(it -> {
                         Chunk chunk = new Chunk()
                                 .setSubContentId(
-                                        content.getContentId() + "-" +atomicInteger.getAndIncrement())
+                                        content.getContentId() + "-" + atomicInteger.getAndIncrement())
                                 .setSubText(embeddingEncoding.decode(it));
 
                         content.getChunks().add(chunk);
@@ -80,7 +80,7 @@ public class OpenAIChunker extends TokensAndChunking {
     public int splitFactor(List<Integer> encodings, ModelType modelType) {
         int size = encodings.size();
 
-        return Math.round(((float) size)/((float) modelType.getMaxContextLength()));
+        return Math.round(((float) size) / ((float) modelType.getMaxContextLength()));
     }
 
 }

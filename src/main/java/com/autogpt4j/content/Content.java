@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @Accessors(chain = true)
-public class Content  {
+public class Content {
 
     private String contentId;
 
@@ -19,7 +19,7 @@ public class Content  {
     private List<Chunk> chunks = new ArrayList<>();
 
     public List<Chunk> getChunks() {
-        if(chunks.size() > 0) {
+        if (chunks.size() > 0) {
             return chunks;
         }
 

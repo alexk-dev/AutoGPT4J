@@ -35,14 +35,18 @@ public class FileCommand extends Command {
         String output = "";
 
         switch (fileName) {
-            case WRITE:  writeFile();
-                         break;
-            case APPEND: appendToFile();
-                         break;
-            case DELETE: deleteFile();
-                         break;
-            case READ:   output = readFile();
-                         break;
+        case WRITE:
+            writeFile();
+            break;
+        case APPEND:
+            appendToFile();
+            break;
+        case DELETE:
+            deleteFile();
+            break;
+        case READ:
+            output = readFile();
+            break;
         }
 
         return output;

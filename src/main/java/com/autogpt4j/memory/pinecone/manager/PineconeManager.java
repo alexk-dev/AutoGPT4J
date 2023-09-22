@@ -1,7 +1,5 @@
 package com.autogpt4j.memory.pinecone.manager;
 
-import static java.util.function.
-
 import com.autogpt4j.content.Chunk;
 import com.autogpt4j.content.Content;
 import com.autogpt4j.memory.MemoryManager;
