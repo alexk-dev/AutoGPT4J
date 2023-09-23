@@ -1,43 +1,46 @@
 package com.autogpt4j.command;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.autogpt4j.config.AppProperties;
+import org.springframework.stereotype.Component;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TwitterCommand extends Command {
+import java.util.Map;
 
-    private final String tweetText;
+@Component
+public class TwitterCommand implements Command {
 
-    @Value("${TWITTER_CONSUMER_KEY}")
-    private String consumerKey;
+    private final AppProperties appProperties;
 
-    @Value("${TWITTER_CONSUMER_SECRET}")
-    private String consumerSecret;
-
-    @Value("${TWITTER_ACCESS_TOKEN}")
-    private String accessToken;
-
-    @Value("${TWITTER_ACCESS_TOKEN_SECRET}")
-    private String accessTokenSecret;
-
-    public TwitterCommand(String tweetText) {
-        this.tweetText = tweetText;
+    public TwitterCommand(AppProperties appProperties) {
+        this.appProperties = appProperties;
     }
 
-    public String execute() {
-        return sendTweet();
+    @Override
+    public String getName() {
+        return "TwitterCommand";
     }
 
-    private String sendTweet() {
+    @Override
+    public String getDescription() {
+        return "TwitterCommand";
+    }
+
+    public String execute(Map<String, Object> params) {
+        String tweetText = (String) params.get("tweetText");
+        return sendTweet(tweetText);
+    }
+
+    private String sendTweet(String tweetText) {
         ConfigurationBuilder cb = new ConfigurationBuilder();
         cb.setDebugEnabled(true)
-                .setOAuthConsumerKey(consumerKey)
-                .setOAuthConsumerSecret(consumerSecret)
-                .setOAuthAccessToken(accessToken)
-                .setOAuthAccessTokenSecret(accessTokenSecret);
+                .setOAuthConsumerKey(appProperties.getTwitterConsumerKey())
+                .setOAuthConsumerSecret(appProperties.getTwitterConsumerSecret())
+                .setOAuthAccessToken(appProperties.getTwitterAccessToken())
+                .setOAuthAccessTokenSecret(appProperties.getTwitterTokenSecret());
 
         TwitterFactory tf = new TwitterFactory(cb.build());
         Twitter twitter = tf.getInstance();

@@ -1,179 +1,144 @@
 package com.autogpt4j.command;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.autogpt4j.config.AppProperties;
+import com.autogpt4j.config.HuggingFaceApiClient;
+import com.autogpt4j.config.OpenAIApiClient;
+import com.autogpt4j.config.SDWebUIClient;
+import com.autogpt4j.dto.DalleRequestDto;
+import com.autogpt4j.dto.SDWebUIRequestDto;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.UUID;
 
-public class ImageGenerationCommand extends Command {
-
-    private final String prompt;
+@Component
+public class ImageGenerationCommand implements Command {
 
     private final String fileName;
+    private final AppProperties appProperties;
+    private final HuggingFaceApiClient huggingFaceApiClient;
+    private final OpenAIApiClient openAIApiClient;
+    private final SDWebUIClient sdWebUIClient;
 
-    private final Integer size;
+    public ImageGenerationCommand(AppProperties appProperties, HuggingFaceApiClient huggingFaceApiClient,
+            OpenAIApiClient openAIApiClient, SDWebUIClient sdWebUIClient) {
+        this.appProperties = appProperties;
+        this.huggingFaceApiClient = huggingFaceApiClient;
+        this.openAIApiClient = openAIApiClient;
+        this.sdWebUIClient = sdWebUIClient;
 
-    @Value("${FILES_LOCATION}")
-    private String filesLocation;
-
-    @Value("${IMAGE_PROVIDER}")
-    private String imageProvider;
-
-    @Value("${HUGGING_FACE_IMAGE_MODEL}")
-    private String huggingFaceImageModel;
-
-    @Value("${HUGGING_FACE_API_KEY}")
-    private String huggingFaceApiKey;
-
-    @Value("${SD_WEBUI_URL}")
-    private String sdWebuiUrl;
-
-    @Value("${SD_WEBUI_AUTH}")
-    private String sdWebuiAuth;
-
-    @Value("${OPENAI_API_KEY}")
-    private String apiKey;
-
-    public ImageGenerationCommand(String prompt, Integer size) {
-        this.prompt = prompt;
-        this.fileName = Paths.get(filesLocation, UUID.randomUUID() + ".jpg").toString();
-        this.size = size;
+        this.fileName = Paths.get(appProperties.getFilesLocation(), UUID.randomUUID() + ".jpg").toString();
     }
 
-    public String execute() {
-        return generateImage();
+    @Override
+    public String getName() {
+        return "ImageGenerationCommand";
     }
 
-    public String generateImage() {
+    @Override
+    public String getDescription() {
+        return "ImageGenerationCommand";
+    }
+
+    public String execute(Map<String, Object> params) {
+        String prompt = (String) params.get("prompt");
+        Integer size = (Integer) params.get("size");
+        return generateImage(prompt, size);
+    }
+
+    public String generateImage(String prompt, Integer size) {
         try {
-            if ("dalle".equals(imageProvider)) {
-                return generateImageWithDalle();
-            } else if ("huggingface".equals(imageProvider)) {
-                return generateImageWithHuggingFace();
-            } else if ("sdwebui".equals(imageProvider)) {
-                return generateImageWithSDWebUI();
+            String imageProvider = appProperties.getImageProvider().toLowerCase();
+            switch (imageProvider) {
+            case "dalle":
+                return generateImageWithDalle(prompt, size);
+            case "huggingface":
+                return generateImageWithHuggingFace(prompt, size);
+            case "sdwebui":
+                return generateImageWithSDWebUI(prompt, size);
+            default:
+                throw new RuntimeException("No Image Provider Set");
             }
-            return "No Image Provider Set";
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String generateImageWithHuggingFace() throws IOException {
-        String apiUrl = String.format("https://api-inference.huggingface.co/models/%s", huggingFaceImageModel);
-
-        if (huggingFaceApiKey == null) {
+    private String generateImageWithHuggingFace(String prompt, Integer size) {
+        if (appProperties.getHuggingFaceApiKey() == null) {
             throw new IllegalArgumentException("You need to set your Hugging Face API token in the config file.");
         }
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost postRequest = new HttpPost(apiUrl);
-            postRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + huggingFaceApiKey);
-            postRequest.setHeader("X-Use-Cache", "false");
-
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("inputs", prompt);
-            postRequest.setEntity(new StringEntity(requestBody.toString(), ContentType.APPLICATION_JSON));
-
-            try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
-                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                    byte[] imageBytes = EntityUtils.toByteArray(response.getEntity());
-                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-                    ImageIO.write(image, "jpg", new File(fileName));
-                    return fileName;
-                } else {
-                    throw new IOException(
-                            "Failed to generate image with HuggingFace: " + response.getStatusLine().getReasonPhrase());
-                }
-            }
+        try {
+            byte[] imageBytes = huggingFaceApiClient.generateImageWithHuggingFace(appProperties.getHuggingFaceApiKey(),
+                    appProperties.getHuggingFaceImageModel(), false, prompt);
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            ImageIO.write(image, "jpg", new File(fileName));
+            return fileName;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate image", e);
         }
     }
 
-    private String generateImageWithDalle() throws IOException {
-        String apiUrl = "https://api.openai.com/v1/images/generations";
-
-        if (apiKey == null) {
+    private String generateImageWithDalle(String prompt, Integer size) {
+        if (appProperties.getOpenAiApiKey() == null) {
             throw new IllegalArgumentException("You need to set your OpenAI API key in the config file.");
         }
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost postRequest = new HttpPost(apiUrl);
-            postRequest.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
-            postRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        try {
+            JsonNode response = openAIApiClient.generateImageWithDalle(appProperties.getOpenAiApiKey(),
+                    DalleRequestDto.builder()
+                            .prompt(prompt)
+                            .size(size + "x" + size)
+                            .build());
 
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("prompt", prompt);
-            requestBody.addProperty("n", 1);
-            requestBody.addProperty("size", size + "x" + size);
-            postRequest.setEntity(new StringEntity(requestBody.toString(), ContentType.APPLICATION_JSON));
-
-            return writeImage(httpClient, postRequest);
-        }
-    }
-
-    private String generateImageWithSDWebUI() throws IOException {
-        String apiUrl = sdWebuiUrl + "/sdapi/v1/txt2img";
-
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost postRequest = new HttpPost(apiUrl);
-            if (sdWebuiAuth != null) {
-                String[] authParts = sdWebuiAuth.split(":");
-                String username = authParts[0];
-                String password = authParts.length > 1 ? authParts[1] : "";
-                String auth = username + ":" + password;
-                byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.ISO_8859_1));
-                postRequest.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + new String(encodedAuth));
-            }
-
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("prompt", prompt);
-            requestBody.addProperty("sampler_index", "DDIM");
-            requestBody.addProperty("steps", 20);
-            requestBody.addProperty("cfg_scale", 7.0);
-            requestBody.addProperty("width", size);
-            requestBody.addProperty("height", size);
-            requestBody.addProperty("n_iter", 1);
-            // Add any extra parameters from the configuration here.
-            postRequest.setEntity(new StringEntity(requestBody.toString(), ContentType.APPLICATION_JSON));
-
-            return writeImage(httpClient, postRequest);
-        }
-    }
-
-    private String writeImage(CloseableHttpClient httpClient, HttpPost postRequest) {
-        try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                String responseJson = EntityUtils.toString(response.getEntity());
-                JsonObject responseObject = new Gson().fromJson(responseJson, JsonObject.class);
-                String base64Image = responseObject.get("images").getAsJsonArray().get(0).getAsString();
-                byte[] imageBytes = Base64.decodeBase64(base64Image.split(",", 2)[1]);
-                BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-                ImageIO.write(image, "jpg", new File(fileName));
-                return fileName;
-            } else {
-                throw new RuntimeException("Failed to generate image with SD WebUI: " +
-                        response.getStatusLine().getReasonPhrase());
-            }
+            ArrayNode arrayNode = (ArrayNode) response.get("images");
+            String base64Image = arrayNode.get(0).asText();
+            byte[] imageBytes = Base64.decodeBase64(base64Image.split(",", 2)[1]);
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            ImageIO.write(image, "jpg", new File(fileName));
+            return fileName;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to generate image", e);
+        }
+    }
+
+    private String generateImageWithSDWebUI(String prompt, Integer size) {
+        if (appProperties.getSdWebuiUrl() == null || appProperties.getSdWebuiUsername() == null
+                || appProperties.getSdWebuiPassword() == null) {
+            throw new IllegalArgumentException(
+                    "You need to set your SDWebUI url, username and password in the config file.");
+        }
+
+        try {
+            String auth = appProperties.getSdWebuiUsername() + ":" + appProperties.getSdWebuiPassword();
+            String digest = Base64.encodeBase64String(auth.getBytes(StandardCharsets.ISO_8859_1));
+
+            JsonNode response = sdWebUIClient.generateImageWithSDWebUI(digest, SDWebUIRequestDto.builder()
+                    .prompt(prompt)
+                    .width(size)
+                    .height(size)
+                    .build());
+
+            ArrayNode arrayNode = (ArrayNode) response.get("images");
+            String base64Image = arrayNode.get(0).asText();
+            byte[] imageBytes = Base64.decodeBase64(base64Image.split(",", 2)[1]);
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            ImageIO.write(image, "jpg", new File(fileName));
+            return fileName;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate image", e);
         }
     }
 

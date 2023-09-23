@@ -1,5 +1,6 @@
 package com.autogpt4j.llm.tokenization.model;
 
+import com.autogpt4j.config.AppProperties;
 import com.autogpt4j.content.Chunk;
 import com.autogpt4j.content.Content;
 import com.autogpt4j.llm.tokenization.TokensAndChunking;
@@ -9,10 +10,12 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Component
 public class OpenAIChunker extends TokensAndChunking {
 
     private final ModelType embeddingModelType;
@@ -20,17 +23,14 @@ public class OpenAIChunker extends TokensAndChunking {
     private final Encoding embeddingEncoding;
     private final Encoding contextEncoding;
 
-    @Value("${OPEN_AI_EMBEDDING_MODEL}")
-    private String embeddingModelName;
+    private final AppProperties appProperties;
 
-    @Value("${OPEN_AI_CONTEXT_MODEL}")
-    private String contextModelName;
+    public OpenAIChunker(AppProperties appProperties) {
+        this.appProperties = appProperties;
+        this.embeddingModelType = ModelType.valueOf(appProperties.getEmbeddingModelName());
+        this.contextModelType = ModelType.valueOf(appProperties.getContextModelName());
 
-    public OpenAIChunker() {
         EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
-
-        this.embeddingModelType = ModelType.valueOf(embeddingModelName);
-        this.contextModelType = ModelType.valueOf(contextModelName);
 
         this.embeddingEncoding = registry.getEncodingForModel(embeddingModelType);
         this.contextEncoding = registry.getEncodingForModel(contextModelType);
@@ -74,7 +74,7 @@ public class OpenAIChunker extends TokensAndChunking {
 
     @Override
     public String getEmbeddingModelName() {
-        return embeddingModelName;
+        return appProperties.getEmbeddingModelName();
     }
 
     public int splitFactor(List<Integer> encodings, ModelType modelType) {

@@ -1,5 +1,6 @@
 package com.autogpt4j.llm.openai.repository;
 
+import com.autogpt4j.config.AppProperties;
 import com.autogpt4j.content.Content;
 import com.autogpt4j.llm.tokenization.TokensAndChunking;
 import com.autogpt4j.llm.tokenization.model.OpenAIChunker;
@@ -11,29 +12,26 @@ import com.theokanning.openai.embedding.Embedding;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 
+@Component
 public class OpenAIRepository {
 
     private final TokensAndChunking tokensAndChunking;
-
     private final OpenAiService openAiService;
+    private final AppProperties appProperties;
 
-    @Value("${OPENAI_API_KEY}")
-    private String apiKey;
-
-    @Value("${OPEN_AI_MODEL}")
-    private String model;
-
-    public OpenAIRepository() {
-        this.tokensAndChunking = new OpenAIChunker();
-        this.openAiService = new OpenAiService(apiKey);
+    public OpenAIRepository(AppProperties appProperties, OpenAIChunker tokensAndChunking) {
+        this.appProperties = appProperties;
+        this.tokensAndChunking = tokensAndChunking;
+        this.openAiService = new OpenAiService(appProperties.getOpenAiApiKey());
     }
 
     public Content getEmbeddings(Content content) {
-        OpenAiService service = new OpenAiService(apiKey);
+        OpenAiService service = new OpenAiService(appProperties.getOpenAiApiKey());
 
         tokensAndChunking.chunkContent(content);
 
@@ -54,7 +52,7 @@ public class OpenAIRepository {
 
     public List<ChatCompletionChoice> getCompletion(List<ChatMessage> chatMessages) {
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model(model)
+                .model(appProperties.getOpenAiModel())
                 .messages(chatMessages)
                 .build();
 

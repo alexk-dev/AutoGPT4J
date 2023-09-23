@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class OpenAIManager extends LLMManager {
+public class OpenAIManager implements LLMManager {
 
     private final OpenAIRepository openAIRepository;
 
-    public OpenAIManager() {
-        this.openAIRepository = new OpenAIRepository();
+    public OpenAIManager(OpenAIRepository openAIRepository) {
+        this.openAIRepository = openAIRepository;
     }
 
     @Override

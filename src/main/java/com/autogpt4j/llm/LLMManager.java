@@ -7,11 +7,11 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 
 import java.util.List;
 
-public abstract class LLMManager {
+public interface LLMManager {
 
-    public abstract Content populateEmbeddings(Content content);
+    Content populateEmbeddings(Content content);
 
-    public abstract List<ChatCompletionChoice> getCompletion(List<ChatMessage> chatMessages);
+    List<ChatCompletionChoice> getCompletion(List<ChatMessage> chatMessages);
 
-    public abstract TokensAndChunking getTokenAndChunking();
+    TokensAndChunking getTokenAndChunking();
 }

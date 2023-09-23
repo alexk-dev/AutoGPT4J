@@ -1,53 +1,61 @@
 package com.autogpt4j.command;
 
+import com.autogpt4j.config.AppProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.customsearch.v1.Customsearch;
 import com.google.api.services.customsearch.v1.model.Result;
 import com.google.api.services.customsearch.v1.model.Search;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class GoogleSearchCommand extends Command {
+@Component
+public class GoogleSearchCommand implements Command {
 
-    private final String query;
+    private final AppProperties appProperties;
 
-    private final Integer numResults;
-
-    @Value("${GOOGLE_API_KEY}")
-    private String GOOGLE_API_KEY = "your_google_api_key";
-
-    @Value("${CUSTOM_SEARCH_ENGINE}")
-    private String CUSTOM_SEARCH_ENGINE_ID = "your_custom_search_engine_id";
-
-    public GoogleSearchCommand(String query, Integer numResults) {
-        this.query = query;
-        this.numResults = numResults;
+    public GoogleSearchCommand(AppProperties appProperties) {
+        this.appProperties = appProperties;
     }
 
     @Override
-    public String execute() {
-        return googleOfficialSearch();
+    public String getName() {
+        return "GoogleSearchCommand";
+    }
+
+    @Override
+    public String getDescription() {
+        return "GoogleSearchCommand";
+    }
+
+    @Override
+    public String execute(Map<String, Object> params) {
+        String query = (String) params.get("query");
+        Integer numResults = (Integer) params.get("numResults");
+        return googleOfficialSearch(query, numResults);
     }
 
     public String googleSearch() {
         return "DuckDuckGo search is not implemented at this time.";
     }
 
-    public String googleOfficialSearch() {
+    public String googleOfficialSearch(String query, Integer numResults) {
         List<String> searchResultsLinks = new ArrayList<>();
 
         try {
-            JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+            ObjectMapper mapper = new ObjectMapper();
+            JsonFactory jsonFactory = new JacksonFactory();
 
             HttpRequestInitializer httpRequestInitializer = request -> {
                 request.setConnectTimeout(60000);
@@ -61,8 +69,8 @@ public class GoogleSearchCommand extends Command {
 
             Customsearch.Cse.List request = customsearch.cse().list();
             request.setQ(query);
-            request.setKey(GOOGLE_API_KEY);
-            request.setCx(CUSTOM_SEARCH_ENGINE_ID);
+            request.setKey(appProperties.getGoogleApiKey());
+            request.setCx(appProperties.getGoogleCustomSearchEngineId());
             request.setNum(numResults);
 
             Search results = request.execute();

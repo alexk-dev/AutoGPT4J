@@ -1,45 +1,59 @@
 package com.autogpt4j.command;
 
-import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Value;
+import com.autogpt4j.config.AppProperties;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Log
-public class ExecuteCodeCommand extends Command {
+@Slf4j
+@Component
+public class ExecuteCodeCommand implements Command {
 
-    private final String fileName;
+    private final AppProperties appProperties;
 
-    @Value("${FILES_LOCATION}")
-    private String filesLocation;
-
-    public ExecuteCodeCommand(String fileName) {
-        this.fileName = fileName;
+    public ExecuteCodeCommand(AppProperties appProperties) {
+        this.appProperties = appProperties;
     }
 
-    public String execute() {
-        return executePythonCode();
+    @Override
+    public String getName() {
+        return "ExecuteCodeCommand";
     }
 
-    private String executePythonCode() {
-        if (!getExtension().equals("py")) {
+    @Override
+    public String getDescription() {
+        return "ExecuteCodeCommand";
+    }
+
+    public String execute(Map<String, Object> params) {
+        String fileName = (String) params.get("fileName");
+        return executePythonCode(fileName);
+    }
+
+    private String executePythonCode(String fileName) {
+        if (!getExtension(fileName).equals("py")) {
             return "Error: Invalid file type. Only .py files are allowed.";
-        } else if (!fileExists()) {
+        } else if (!fileExists(fileName)) {
             return String.format("Error: File %s does not exist.", fileName);
         }
 
-        return runPythonFile().stream()
+        return runPythonFile(fileName).stream()
                 .collect(Collectors.joining(" "));
 
     }
 
-    private List<String> runPythonFile() {
+    private List<String> runPythonFile(String fileName) {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("python", getFile().getAbsolutePath());
+            ProcessBuilder processBuilder = new ProcessBuilder("python", getFile(fileName).getAbsolutePath());
             processBuilder.redirectErrorStream(true);
 
             Process process = processBuilder.start();
@@ -60,20 +74,20 @@ public class ExecuteCodeCommand extends Command {
         }
     }
 
-    private File getFile() {
-        return Paths.get(filesLocation, fileName).toFile();
+    private File getFile(String fileName) {
+        return Paths.get(appProperties.getFilesLocation(), fileName).toFile();
     }
 
-    private boolean fileExists() {
-        return getFile().exists();
+    private boolean fileExists(String fileName) {
+        return getFile(fileName).exists();
     }
 
-    private String getExtension() {
-        return getExtensionByStringHandling()
+    private String getExtension(String fileName) {
+        return getExtensionByStringHandling(fileName)
                 .orElseThrow(() -> new RuntimeException("File does not have an extension."));
     }
 
-    private Optional<String> getExtensionByStringHandling() {
+    private Optional<String> getExtensionByStringHandling(String fileName) {
         return Optional.ofNullable(fileName)
                 .filter(f -> f.contains("."))
                 .map(f -> f.substring(fileName.lastIndexOf(".") + 1));

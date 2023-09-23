@@ -1,98 +1,110 @@
 package com.autogpt4j.command;
 
-import lombok.extern.java.Log;
+import com.autogpt4j.config.AppProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
+import java.util.Map;
 
-@Log
-public class FileCommand extends Command {
+@Slf4j
+@Component
+public class FileCommand implements Command {
 
     public final static String WRITE = "write";
     public final static String APPEND = "append";
     public final static String DELETE = "delete";
     public final static String READ = "read";
 
-    private final String commandName;
-    private final String fileName;
-    private final String text;
+    private final AppProperties appProperties;
+    private final ObjectMapper mapper;
     private final CommandLog commandLog;
 
-    @Value("${FILES_LOCATION}")
-    private String filesLocation;
-
-    public FileCommand(String commandName, String fileName, String text) {
-        this.commandName = commandName;
-        this.fileName = fileName;
-        this.text = text;
-        this.commandLog = new CommandLog();
+    public FileCommand(AppProperties appProperties, ObjectMapper mapper, CommandLog commandLog) {
+        this.appProperties = appProperties;
+        this.mapper = mapper;
+        this.commandLog = commandLog;
     }
 
-    public String execute() {
+    @Override
+    public String getName() {
+        return "FileCommand";
+    }
+
+    @Override
+    public String getDescription() {
+        return "FileCommand";
+    }
+
+    public String execute(Map<String, Object> params) {
+        String commandName = (String) params.get("commandName");
+        String fileName = (String) params.get("fileName");
+        String text = (String) params.get("text");
         String output = "";
 
-        switch (fileName) {
+        switch (commandName) {
         case WRITE:
-            writeFile();
+            writeFile(fileName, text);
             break;
         case APPEND:
-            appendToFile();
+            appendToFile(fileName, text);
             break;
         case DELETE:
-            deleteFile();
+            deleteFile(fileName);
             break;
         case READ:
-            output = readFile();
+            output = readFile(fileName);
             break;
         }
 
         return output;
     }
 
-    private void deleteFile() {
-        log.warning("DELETING FILE: " + getFile().getAbsolutePath());
+    private void deleteFile(String fileName) {
+        log.warn("DELETING FILE: {}", getFile(fileName).getAbsolutePath());
 
         try {
-            FileUtils.delete(getFile());
+            FileUtils.delete(getFile(fileName));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void appendToFile() {
-        log.warning("APPENDING TO FILE: " + getFile().getAbsolutePath());
+    private void appendToFile(String fileName, String text) {
+        log.warn("APPENDING TO FILE: {}", getFile(fileName).getAbsolutePath());
 
         try {
-            FileUtils.writeStringToFile(getFile(), text, Charset.forName("UTF-8"), true);
+            FileUtils.writeStringToFile(getFile(fileName), text, Charset.forName("UTF-8"), true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void writeFile() {
-        log.warning("WRITING FILE: " + getFile().getAbsolutePath());
+    private void writeFile(String fileName, String text) {
+        log.warn("WRITING FILE: {}", getFile(fileName).getAbsolutePath());
 
         try {
-            FileUtils.writeStringToFile(getFile(), text, Charset.forName("UTF-8"));
+            FileUtils.writeStringToFile(getFile(fileName), text, Charset.forName("UTF-8"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String readFile() {
-        log.warning("READING FILE: " + getFile().getAbsolutePath());
+    private String readFile(String fileName) {
+        log.warn("READING FILE: {}", getFile(fileName).getAbsolutePath());
 
         try {
-            return FileUtils.readFileToString(getFile());
+            return FileUtils.readFileToString(getFile(fileName));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private File getFile() {
-        return Paths.get(filesLocation, fileName).toFile();
+    private File getFile(String fileName) {
+        return Paths.get(appProperties.getFilesLocation(), fileName).toFile();
     }
 }

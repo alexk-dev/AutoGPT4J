@@ -1,26 +1,21 @@
 package com.autogpt4j.command;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import java.util.Map;
 
-@Getter
-@Setter
-@Accessors(chain = true)
-public abstract class Command {
+public interface Command {
 
-    private String name;
+    String getName();
 
-    private String description;
+    String getDescription();
 
-    private String method;
+    // String getMethod();
+    //
+    // String getSignature();
+    //
+    // boolean isEnabled();
+    //
+    // String getDisabledReason();
 
-    private String signature;
-
-    private boolean enabled;
-
-    private String disabledReason;
-
-    public abstract String execute();
+    String execute(Map<String, Object> params);
 
 }
